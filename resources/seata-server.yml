@@ -1,0 +1,24 @@
+# ============================================================
+# 领课教育 Seata Server 独立部署 (2.5.0)
+# 前提: 服务器上已部署好 Nacos 和 Redis
+# 使用方法:
+#   1. 把 seata-application.yml 和 seata-server.yml 放同一目录
+#   2. docker compose -f seata-server.yml up -d
+# ============================================================
+
+services:
+  seata-server:
+    image: docker.m.daocloud.io/apache/seata-server:2.5.0
+    container_name: edu-seata-server
+    restart: always
+    environment:
+      # Seata 注册到 Nacos 的 IP，应用客户端会据此回连 Seata。
+      # 必须填"应用能访问到 Seata 所在服务器"的地址（内网/公网 IP），不要用 127.0.0.1
+      SEATA_IP: 8.140.227.42
+      SERVER_NODE: 1
+    volumes:
+      # 挂载配置文件覆盖容器内默认 application.yml
+      - ./seata-application.yml:/seata-server/resources/application.yml
+    ports:
+      - "7091:7091"
+      - "8091:8091"

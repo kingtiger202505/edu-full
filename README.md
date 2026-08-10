@@ -14,8 +14,18 @@ roncoo-education-full/
 │
 ├── roncoo-education-admin/   # 后台管理端（Vue 3.5 + Element Plus 2.11 + Vite）
 │
-└── roncoo-education-web/     # 用户前台（Nuxt 3.17 + Vue 3.5）
+├── roncoo-education-web/     # 用户前台（Nuxt 3.17 + Vue 3.5）
+│
+└── resources/                # 部署资源（本地/服务器环境）
+    ├── docker-compose.yml         # 一体化部署：MySQL/Redis/Nacos/xxl-job/Seata
+    ├── seata-application.yml      # Seata Server 配置（注册/配置中心指向 Nacos）
+    ├── seata-server.yml           # Seata Server 独立部署 compose
+    ├── mysql-init/                # MySQL 初始化脚本（os_course/os_job/os_system/os_user）
+    ├── os_*.sql                   # 业务库 SQL（同 mysql-init/sql 备份）
+    └── nacos_config/              # Nacos 配置导出（DEFAULT_GROUP + SEATA_GROUP）
 ```
+
+> ⚠️ `resources/` 内含本地环境凭据（MySQL/Redis/Nacos 密码、服务器 IP 等），仓库设为 **private**。若后续转为公开，需先轮换相关凭据。
 
 ## 技术栈
 
