@@ -1,0 +1,42 @@
+# ===== 顶层兜底忽略规则（各子项目自带 .gitignore 仍生效）=====
+
+# Java / Maven
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.classpath
+*.project
+*.settings/
+*.mvn
+*.springBeans
+*.factorypath
+
+# Node / 前端
+**/node_modules/
+**/dist/
+**/.nuxt/
+**/.output/
+**/.cache/
+npm-debug.log*
+yarn-debug.log*
+pnpm-lock.yaml
+package-lock.json
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 构建产物
+**/distribution/target/
+*.zip
