@@ -6,9 +6,32 @@ on:
       - master
 
 jobs:
-  # ================= 1. 极速并行编译后端与前端 =================
+  # ================= 1. 检测变更目录 (Path Filter) =================
+  changes:
+    name: Check Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      admin: ${{ steps.filter.outputs.admin }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'roncoo-education/**'
+            admin:
+              - 'roncoo-education-admin/**'
+            web:
+              - 'roncoo-education-web/**'
+
+  # ================= 2. 条件编译后端与前端 =================
   build-backend:
     name: Build Java Backend
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +62,8 @@ jobs:
 
   build-frontend-admin:
     name: Build Admin Frontend
+    needs: changes
+    if: ${{ needs.changes.outputs.admin == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +92,8 @@ jobs:
 
   build-frontend-web:
     name: Build Web Frontend
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,37 +120,41 @@ jobs:
           path: resources/frontend/dist/web/
           retention-days: 1
 
-  # ================= 2. 压缩打成单个包，极速 SCP 传输部署 =================
+  # ================= 3. 智能按需打包部署 =================
   deploy:
     name: Deploy to Server
-    needs: [build-backend, build-frontend-admin, build-frontend-web]
+    needs: [changes, build-backend, build-frontend-admin, build-frontend-web]
+    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Backend Artifact
+      - name: Download Backend Artifact (if built)
+        if: ${{ needs.changes.outputs.backend == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: backend-target
           path: resources/backend/target/
 
-      - name: Download Admin Artifact
+      - name: Download Admin Artifact (if built)
+        if: ${{ needs.changes.outputs.admin == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: frontend-admin-dist
           path: resources/frontend/dist/admin/
 
-      - name: Download Web Artifact
+      - name: Download Web Artifact (if built)
+        if: ${{ needs.changes.outputs.web == 'true' }}
         uses: actions/download-artifact@v4
         with:
           name: frontend-web-dist
           path: resources/frontend/dist/web/
 
-      - name: Pack All Resources into Single Archive
+      - name: Pack Resources into Single Archive
         run: |
           tar -czf deploy.tar.gz resources/
 
-      - name: SCP Single Compressed Archive to Server
+      - name: SCP Compressed Archive to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -133,7 +164,7 @@ jobs:
           source: "deploy.tar.gz"
           target: "/data/app/"
 
-      - name: Extract Archive and Restart Docker Services
+      - name: Extract Archive and Restart Changed Docker Services
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -144,5 +175,15 @@ jobs:
             cd /data/app
             tar -xzf deploy.tar.gz
             rm -f deploy.tar.gz
-            cd resources/backend && docker compose up -d --build
-            cd ../frontend && docker compose up -d
+
+            # 只有后端改动时才重新编译部署 Java Docker
+            if [ "${{ needs.changes.outputs.backend }}" = "true" ]; then
+                echo "Deploying backend services..."
+                cd resources/backend && docker compose up -d --build
+            fi
+
+            # 只要任意前端改动，重新加载前端 Nginx Docker
+            if [ "${{ needs.changes.outputs.admin }}" = "true" ] || [ "${{ needs.changes.outputs.web }}" = "true" ]; then
+                echo "Deploying frontend services..."
+                cd /data/app/resources/frontend && docker compose up -d
+            fi
