@@ -38,7 +38,7 @@ jobs:
       - name: Build Admin Frontend
         run: |
           cd roncoo-education-admin
-          npm ci
+          npm install
           npm run build
           mkdir -p ../resources/frontend/dist/admin
           cp -r dist/* ../resources/frontend/dist/admin/
@@ -46,7 +46,7 @@ jobs:
       - name: Build Web Frontend
         run: |
           cd roncoo-education-web
-          npm ci
+          npm install
           npx nuxi generate
           mkdir -p ../resources/frontend/dist/web
           cp -r .output/public/* ../resources/frontend/dist/web/
