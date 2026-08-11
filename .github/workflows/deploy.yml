@@ -14,6 +14,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       admin: ${{ steps.filter.outputs.admin }}
       web: ${{ steps.filter.outputs.web }}
+      resources: ${{ steps.filter.outputs.resources }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -26,6 +27,8 @@ jobs:
               - 'roncoo-education-admin/**'
             web:
               - 'roncoo-education-web/**'
+            resources:
+              - 'resources/**'
 
   # ================= 2. 条件编译后端与前端 =================
   build-backend:
@@ -176,14 +179,20 @@ jobs:
             tar -xzf deploy.tar.gz
             rm -f deploy.tar.gz
 
-            # 只有后端改动时才重新编译部署 Java Docker
+            # 只有后端源码改动时才重新编译部署 Java Docker
             if [ "${{ needs.changes.outputs.backend }}" = "true" ]; then
                 echo "Deploying backend services..."
-                cd resources/backend && docker compose up -d --build
+                cd /data/app/resources/backend && docker compose up -d --build
             fi
 
-            # 只要任意前端改动，重新加载前端 Nginx Docker
-            if [ "${{ needs.changes.outputs.admin }}" = "true" ] || [ "${{ needs.changes.outputs.web }}" = "true" ]; then
-                echo "Deploying frontend services..."
-                cd /data/app/resources/frontend && docker compose up -d
+            # resources 单独变更（docker-compose/nginx 配置等），重建后端容器
+            if [ "${{ needs.changes.outputs.backend }}" != "true" ] && [ "${{ needs.changes.outputs.resources }}" = "true" ]; then
+                echo "Reloading backend services (config only)..."
+                cd /data/app/resources/backend && docker compose up -d --force-recreate
+            fi
+
+            # 前端源码或 resources 变更，重建前端 Nginx 容器
+            if [ "${{ needs.changes.outputs.admin }}" = "true" ] || [ "${{ needs.changes.outputs.web }}" = "true" ] || [ "${{ needs.changes.outputs.resources }}" = "true" ]; then
+                echo "Reloading frontend services..."
+                cd /data/app/resources/frontend && docker compose up -d --force-recreate
             fi
