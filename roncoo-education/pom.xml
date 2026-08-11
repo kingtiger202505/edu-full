@@ -38,11 +38,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- spring boot -->
+            <!-- spring boot (3.3.x 搭配 SC 2023.0.x / SCA 2023.0.3.x，Nacos Client 2.x) -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-parent</artifactId>
-                <version>3.5.0</version>
+                <version>3.3.7</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -51,21 +51,28 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2025.0.0</version>
+                <version>2023.0.5</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
 
-            <!-- spring cloud alibaba -->
+            <!-- spring cloud alibaba (内置 Nacos Client 2.5.x，兼容 Nacos Server 2.3.2) -->
             <dependency>
                 <groupId>com.alibaba.cloud</groupId>
                 <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-                <version>2025.0.0.0</version>
+                <version>2023.0.3.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
 
             <!-- 版本锁定 -->
+            <!-- seata (SCA 2023.0.3.4 内置 Seata 2.2.x，这里锁定为 2.5.0 与 Seata Server 一致) -->
+            <dependency>
+                <groupId>io.seata</groupId>
+                <artifactId>seata-spring-boot-starter</artifactId>
+                <version>2.5.0</version>
+            </dependency>
+
             <!-- commons -->
             <dependency>
                 <groupId>commons-io</groupId>
@@ -109,7 +116,7 @@
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>3.3.7</version>
                     <configuration>
                         <executable>true</executable>
                     </configuration>
@@ -128,10 +135,10 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
-                        <skip>true</skip>
                         <encoding>${project.build.sourceEncoding}</encoding>
                         <compilerArgs>
                             <arg>-parameters</arg>

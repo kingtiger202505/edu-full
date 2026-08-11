@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/gateway.jar
+    container_name: edu-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  service-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/system.jar
+    container_name: edu-service-system
+    restart: always
+    ports:
+      - "8710:8710"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  service-user:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/user.jar
+    container_name: edu-service-user
+    restart: always
+    ports:
+      - "8720:8720"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  service-course:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/course.jar
+    container_name: edu-service-course
+    restart: always
+    ports:
+      - "8730:8730"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -39,7 +39,7 @@
         <el-card class="account-setting">
           <div class="setting">
             <div class="setting-info">
-              <img src="../../assets/svg/account/password.svg" width="60px" />
+              <img src="~/assets/svg/account/password.svg" width="60px" />
               <div>
                 重置登录密码
                 <br />
@@ -54,7 +54,7 @@
         <el-card v-if="websiteInfo?.wxPcLoginEnable === '1'" class="account-setting">
           <div class="setting">
             <div class="setting-info">
-              <img src="../../assets/svg/account/wechat.svg" width="60px" />
+              <img src="~/assets/svg/account/wechat.svg" width="60px" />
               <div>
                 微信账号绑定
                 <br />

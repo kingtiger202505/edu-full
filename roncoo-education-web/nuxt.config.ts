@@ -2,8 +2,12 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
+  ssr: false,
   experimental: {
     asyncContext: true
+  },
+  alias: {
+    'assets': '~/assets'
   },
   css: ['~/assets/styles/main.scss'],
   modules: ['@element-plus/nuxt', '@vueuse/nuxt'],
