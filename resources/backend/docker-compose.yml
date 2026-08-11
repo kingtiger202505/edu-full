@@ -15,7 +15,7 @@ services:
     container_name: edu-gateway
     restart: always
     ports:
-      - "8080:8080"
+      - "8080:7700"
     networks:
       - edu-net
 
@@ -28,7 +28,7 @@ services:
     container_name: edu-service-system
     restart: always
     ports:
-      - "8710:8710"
+      - "8710:7710"
     networks:
       - edu-net
 
@@ -41,7 +41,7 @@ services:
     container_name: edu-service-user
     restart: always
     ports:
-      - "8720:8720"
+      - "8720:7720"
     networks:
       - edu-net
 
@@ -54,6 +54,6 @@ services:
     container_name: edu-service-course
     restart: always
     ports:
-      - "8730:8730"
+      - "8730:7730"
     networks:
       - edu-net
