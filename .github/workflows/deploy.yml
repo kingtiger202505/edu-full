@@ -6,12 +6,12 @@ on:
       - master
 
 jobs:
-  build-and-deploy:
+  # ================= 1. 极速并行编译后端与前端 =================
+  build-backend:
+    name: Build Java Backend
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -23,45 +23,117 @@ jobs:
       - name: Build Java Microservices
         run: |
           cd roncoo-education
-          mvn clean package -DskipTests
+          mvn clean package -DskipTests -T 1C
           mkdir -p ../resources/backend/target
           cp roncoo-education-gateway/target/gateway.jar ../resources/backend/target/
           cp roncoo-education-service/roncoo-education-service-system/target/system.jar ../resources/backend/target/
           cp roncoo-education-service/roncoo-education-service-user/target/user.jar ../resources/backend/target/
           cp roncoo-education-service/roncoo-education-service-course/target/course.jar ../resources/backend/target/
 
+      - name: Upload Backend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-target
+          path: resources/backend/target/
+          retention-days: 1
+
+  build-frontend-admin:
+    name: Build Admin Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: roncoo-education-admin/package.json
 
-      - name: Build Admin Frontend
+      - name: Build Admin
         run: |
           cd roncoo-education-admin
-          npm install
+          npm install --prefer-offline --no-audit
           npm run build
           mkdir -p ../resources/frontend/dist/admin
           cp -r dist/* ../resources/frontend/dist/admin/
 
-      - name: Build Web Frontend
+      - name: Upload Admin Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-admin-dist
+          path: resources/frontend/dist/admin/
+          retention-days: 1
+
+  build-frontend-web:
+    name: Build Web Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: roncoo-education-web/package.json
+
+      - name: Build Web
         run: |
           cd roncoo-education-web
-          npm install
+          npm install --prefer-offline --no-audit
           npx nuxi generate
           mkdir -p ../resources/frontend/dist/web
           cp -r .output/public/* ../resources/frontend/dist/web/
 
-      - name: Copy deployment files to server via SCP
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-web-dist
+          path: resources/frontend/dist/web/
+          retention-days: 1
+
+  # ================= 2. 压缩打成单个包，极速 SCP 传输部署 =================
+  deploy:
+    name: Deploy to Server
+    needs: [build-backend, build-frontend-admin, build-frontend-web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Backend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-target
+          path: resources/backend/target/
+
+      - name: Download Admin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-admin-dist
+          path: resources/frontend/dist/admin/
+
+      - name: Download Web Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-web-dist
+          path: resources/frontend/dist/web/
+
+      - name: Pack All Resources into Single Archive
+        run: |
+          tar -czf deploy.tar.gz resources/
+
+      - name: SCP Single Compressed Archive to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "resources/"
+          source: "deploy.tar.gz"
           target: "/data/app/"
 
-      - name: Restart Docker services on server via SSH
+      - name: Extract Archive and Restart Docker Services
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -69,5 +141,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            cd /data/app/resources/backend && docker compose up -d --build
-            cd /data/app/resources/frontend && docker compose up -d
+            cd /data/app
+            tar -xzf deploy.tar.gz
+            rm -f deploy.tar.gz
+            cd resources/backend && docker compose up -d --build
+            cd ../frontend && docker compose up -d
