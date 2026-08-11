@@ -1,5 +1,9 @@
 version: "3.8"
 
+networks:
+  edu-net:
+    driver: bridge
+
 services:
   gateway:
     build:
@@ -11,8 +15,8 @@ services:
     restart: always
     ports:
       - "8080:8080"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - edu-net
 
   service-system:
     build:
@@ -24,8 +28,8 @@ services:
     restart: always
     ports:
       - "8710:8710"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - edu-net
 
   service-user:
     build:
@@ -37,8 +41,8 @@ services:
     restart: always
     ports:
       - "8720:8720"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - edu-net
 
   service-course:
     build:
@@ -50,5 +54,5 @@ services:
     restart: always
     ports:
       - "8730:8730"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - edu-net

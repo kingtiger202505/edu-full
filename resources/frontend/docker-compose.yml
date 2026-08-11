@@ -1,5 +1,9 @@
 version: "3.8"
 
+networks:
+  edu-net:
+    external: true
+
 services:
   frontend-nginx:
     image: nginx:alpine
@@ -12,5 +16,5 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./dist/admin:/usr/share/nginx/html/admin:ro
       - ./dist/web:/usr/share/nginx/html/web:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - edu-net
