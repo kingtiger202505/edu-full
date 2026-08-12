@@ -65,6 +65,13 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- 锁定 nacos-client 版本为 2.3.2 严格匹配服务端 -->
+            <dependency>
+                <groupId>com.alibaba.nacos</groupId>
+                <artifactId>nacos-client</artifactId>
+                <version>2.3.2</version>
+            </dependency>
+
             <!-- 版本锁定 -->
             <!-- seata (SCA 2023.0.3.4 内置 Seata 2.2.x，这里锁定为 2.5.0 与 Seata Server 一致) -->
             <dependency>
