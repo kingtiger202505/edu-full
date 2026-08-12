@@ -4,37 +4,12 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
-  # ================= 1. 检测变更目录 (Path Filter) =================
-  changes:
-    name: Check Changed Paths
-    runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      admin: ${{ steps.filter.outputs.admin }}
-      web: ${{ steps.filter.outputs.web }}
-      resources: ${{ steps.filter.outputs.resources }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'roncoo-education/**'
-            admin:
-              - 'roncoo-education-admin/**'
-            web:
-              - 'roncoo-education-web/**'
-            resources:
-              - 'resources/**'
-
-  # ================= 2. 条件编译后端与前端 =================
+  # ================= 1. 并行编译后端与前端产物 =================
   build-backend:
     name: Build Java Backend
-    needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,8 +40,6 @@ jobs:
 
   build-frontend-admin:
     name: Build Admin Frontend
-    needs: changes
-    if: ${{ needs.changes.outputs.admin == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,8 +68,6 @@ jobs:
 
   build-frontend-web:
     name: Build Web Frontend
-    needs: changes
-    if: ${{ needs.changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -123,31 +94,27 @@ jobs:
           path: resources/frontend/dist/web/
           retention-days: 1
 
-  # ================= 3. 智能按需打包部署 =================
+  # ================= 2. 打包所有产物传输并部署 =================
   deploy:
     name: Deploy to Server
-    needs: [changes, build-backend, build-frontend-admin, build-frontend-web]
-    if: ${{ always() && !cancelled() && !contains(needs.*.result, 'failure') }}
+    needs: [build-backend, build-frontend-admin, build-frontend-web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Backend Artifact (if built)
-        if: ${{ needs.changes.outputs.backend == 'true' }}
+      - name: Download Backend Artifact
         uses: actions/download-artifact@v4
         with:
           name: backend-target
           path: resources/backend/target/
 
-      - name: Download Admin Artifact (if built)
-        if: ${{ needs.changes.outputs.admin == 'true' }}
+      - name: Download Admin Artifact
         uses: actions/download-artifact@v4
         with:
           name: frontend-admin-dist
           path: resources/frontend/dist/admin/
 
-      - name: Download Web Artifact (if built)
-        if: ${{ needs.changes.outputs.web == 'true' }}
+      - name: Download Web Artifact
         uses: actions/download-artifact@v4
         with:
           name: frontend-web-dist
@@ -167,7 +134,7 @@ jobs:
           source: "deploy.tar.gz"
           target: "/data/app/"
 
-      - name: Extract Archive and Restart Changed Docker Services
+      - name: Extract Archive and Start Docker Services on Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -179,28 +146,8 @@ jobs:
             tar -xzf deploy.tar.gz
             rm -f deploy.tar.gz
 
-            export BACKEND_CHANGED="${{ needs.changes.outputs.backend }}"
-            export ADMIN_CHANGED="${{ needs.changes.outputs.admin }}"
-            export WEB_CHANGED="${{ needs.changes.outputs.web }}"
-            export RESOURCES_CHANGED="${{ needs.changes.outputs.resources }}"
+            echo "Deploying backend microservices..."
+            cd /data/app/resources/backend && docker compose up -d --build
 
-            echo "backend=$BACKEND_CHANGED admin=$ADMIN_CHANGED web=$WEB_CHANGED resources=$RESOURCES_CHANGED"
-
-            # 后端源码变更：重新编译并部署
-            if [ "$BACKEND_CHANGED" = "true" ]; then
-                echo "Deploying backend services (rebuild)..."
-                cd /data/app/resources/backend && docker compose up -d --build
-            elif [ "$RESOURCES_CHANGED" = "true" ]; then
-                echo "Reloading backend services (force recreate for config changes)..."
-                cd /data/app/resources/backend && docker compose up -d --force-recreate
-            else
-                echo "No backend changes, skipping."
-            fi
-
-            # 前端源码或 resources 变更：强制重建前端
-            if [ "$ADMIN_CHANGED" = "true" ] || [ "$WEB_CHANGED" = "true" ] || [ "$RESOURCES_CHANGED" = "true" ]; then
-                echo "Reloading frontend services..."
-                cd /data/app/resources/frontend && docker compose down && docker compose up -d --force-recreate
-            else
-                echo "No frontend changes, skipping."
-            fi
+            echo "Deploying frontend Nginx..."
+            cd /data/app/resources/frontend && docker compose up -d --force-recreate
