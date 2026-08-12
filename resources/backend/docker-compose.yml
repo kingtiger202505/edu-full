@@ -7,7 +7,7 @@ networks:
 
 services:
   gateway:
-    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/edu/gateway:latest
+    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/kingtiger-edu/gateway:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -26,7 +26,7 @@ services:
       - edu-net
 
   service-system:
-    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/edu/system:latest
+    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/kingtiger-edu/system:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -45,7 +45,7 @@ services:
       - edu-net
 
   service-user:
-    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/edu/user:latest
+    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/kingtiger-edu/user:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -64,7 +64,7 @@ services:
       - edu-net
 
   service-course:
-    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/edu/course:latest
+    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/kingtiger-edu/course:latest
     build:
       context: .
       dockerfile: Dockerfile

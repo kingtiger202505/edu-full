@@ -136,25 +136,25 @@ jobs:
 
           # 1. Gateway
           docker buildx build --push \
-            -t $REGISTRY/edu/gateway:latest \
+            -t $REGISTRY/kingtiger-edu/gateway:latest \
             --build-arg JAR_FILE=target/gateway.jar \
             -f resources/backend/Dockerfile resources/backend
 
           # 2. System
           docker buildx build --push \
-            -t $REGISTRY/edu/system:latest \
+            -t $REGISTRY/kingtiger-edu/system:latest \
             --build-arg JAR_FILE=target/system.jar \
             -f resources/backend/Dockerfile resources/backend
 
           # 3. User
           docker buildx build --push \
-            -t $REGISTRY/edu/user:latest \
+            -t $REGISTRY/kingtiger-edu/user:latest \
             --build-arg JAR_FILE=target/user.jar \
             -f resources/backend/Dockerfile resources/backend
 
           # 4. Course
           docker buildx build --push \
-            -t $REGISTRY/edu/course:latest \
+            -t $REGISTRY/kingtiger-edu/course:latest \
             --build-arg JAR_FILE=target/course.jar \
             -f resources/backend/Dockerfile resources/backend
 
