@@ -94,7 +94,7 @@ jobs:
           path: resources/frontend/dist/web/
           retention-days: 1
 
-  # ================= 2. 打包所有产物传输并部署 =================
+  # ================= 2. 极限压缩与极速传输部署 =================
   deploy:
     name: Deploy to Server
     needs: [build-backend, build-frontend-admin, build-frontend-web]
@@ -120,18 +120,21 @@ jobs:
           name: frontend-web-dist
           path: resources/frontend/dist/web/
 
-      - name: Pack Resources into Single Archive
+      - name: Extreme Compress Resources
         run: |
-          tar -czf deploy.tar.gz resources/
+          tar -c --use-compress-program="xz -T0 -3" -f deploy.tar.xz resources/
+          ls -lh deploy.tar.xz
 
-      - name: SCP Compressed Archive to Server
+      - name: SCP Extreme Compressed Archive to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "deploy.tar.gz"
+          timeout: 120s
+          command_timeout: 10m
+          source: "deploy.tar.xz"
           target: "/data/app/"
 
       - name: Extract Archive and Start Docker Services on Server
@@ -143,8 +146,8 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd /data/app
-            tar -xzf deploy.tar.gz
-            rm -f deploy.tar.gz
+            tar -xf deploy.tar.xz
+            rm -f deploy.tar.xz
 
             echo "Deploying backend microservices..."
             cd /data/app/resources/backend && docker compose up -d --build
