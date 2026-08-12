@@ -16,6 +16,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -33,6 +34,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -50,6 +52,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -67,6 +70,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
