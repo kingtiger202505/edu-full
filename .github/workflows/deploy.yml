@@ -25,17 +25,17 @@ jobs:
         run: |
           cd roncoo-education
           mvn clean package -DskipTests -T 1C
-          mkdir -p ../resources/backend/target
-          cp roncoo-education-gateway/target/gateway.jar ../resources/backend/target/
-          cp roncoo-education-service/roncoo-education-service-system/target/system.jar ../resources/backend/target/
-          cp roncoo-education-service/roncoo-education-service-user/target/user.jar ../resources/backend/target/
-          cp roncoo-education-service/roncoo-education-service-course/target/course.jar ../resources/backend/target/
+          mkdir -p ../dist_artifacts/backend/target
+          cp roncoo-education-gateway/target/gateway.jar ../dist_artifacts/backend/target/
+          cp roncoo-education-service/roncoo-education-service-system/target/system.jar ../dist_artifacts/backend/target/
+          cp roncoo-education-service/roncoo-education-service-user/target/user.jar ../dist_artifacts/backend/target/
+          cp roncoo-education-service/roncoo-education-service-course/target/course.jar ../dist_artifacts/backend/target/
 
       - name: Upload Backend Artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-target
-          path: resources/backend/target/
+          path: dist_artifacts/backend/target/
           retention-days: 1
 
   build-frontend-admin:
@@ -56,14 +56,14 @@ jobs:
           cd roncoo-education-admin
           npm install --prefer-offline --no-audit
           npm run build
-          mkdir -p ../resources/frontend/dist/admin
-          cp -r dist/* ../resources/frontend/dist/admin/
+          mkdir -p ../dist_artifacts/frontend/dist/admin
+          cp -r dist/* ../dist_artifacts/frontend/dist/admin/
 
       - name: Upload Admin Artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-admin-dist
-          path: resources/frontend/dist/admin/
+          path: dist_artifacts/frontend/dist/admin/
           retention-days: 1
 
   build-frontend-web:
@@ -84,17 +84,17 @@ jobs:
           cd roncoo-education-web
           npm install --prefer-offline --no-audit
           npx nuxi generate
-          mkdir -p ../resources/frontend/dist/web
-          cp -r .output/public/* ../resources/frontend/dist/web/
+          mkdir -p ../dist_artifacts/frontend/dist/web
+          cp -r .output/public/* ../dist_artifacts/frontend/dist/web/
 
       - name: Upload Web Artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-web-dist
-          path: resources/frontend/dist/web/
+          path: dist_artifacts/frontend/dist/web/
           retention-days: 1
 
-  # ================= 2. 极限压缩与极速传输部署 =================
+  # ================= 2. 干净纯产物打包与极速传输部署 =================
   deploy:
     name: Deploy to Server
     needs: [build-backend, build-frontend-admin, build-frontend-web]
@@ -120,21 +120,21 @@ jobs:
           name: frontend-web-dist
           path: resources/frontend/dist/web/
 
-      - name: Extreme Compress Resources
+      - name: Clean Pack Resources Only (Strictly No Node Modules)
         run: |
-          tar -c --use-compress-program="xz -T0 -3" -f deploy.tar.xz resources/
-          ls -lh deploy.tar.xz
+          tar -czf deploy.tar.gz --exclude='node_modules' --exclude='.git' resources/
+          ls -lh deploy.tar.gz
 
-      - name: SCP Extreme Compressed Archive to Server
+      - name: SCP Single Compressed Archive to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          timeout: 120s
+          timeout: 300s
           command_timeout: 10m
-          source: "deploy.tar.xz"
+          source: "deploy.tar.gz"
           target: "/data/app/"
 
       - name: Extract Archive and Start Docker Services on Server
@@ -146,8 +146,8 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd /data/app
-            tar -xf deploy.tar.xz
-            rm -f deploy.tar.xz
+            tar -xzf deploy.tar.gz
+            rm -f deploy.tar.gz
 
             echo "Deploying backend microservices..."
             cd /data/app/resources/backend && docker compose up -d --build
