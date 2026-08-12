@@ -94,13 +94,22 @@ jobs:
           path: dist_artifacts/frontend/dist/web/
           retention-days: 1
 
-  # ================= 2. 构建 Docker 镜像并推送至阿里云 ACR =================
+  # ================= 2. 构建带时间戳/提交Hash版本的 Docker 镜像并推送至 ACR =================
   build-and-push-images:
-    name: Build and Push Docker Images to Aliyun ACR
+    name: Build and Push Docker Images with Version Tag
     needs: [build-backend, build-frontend-admin, build-frontend-web]
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.version.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate Version Tag
+        id: version
+        run: |
+          TAG="$(date +'%Y%m%d-%H%M%S')-${GITHUB_SHA:~0:7}"
+          echo "image_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Generated Version Tag: $TAG"
 
       - name: Download Backend Artifact
         uses: actions/download-artifact@v4
@@ -130,35 +139,42 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and Push Microservice Images
+      - name: Build and Push Microservice Images with Version Tag
         run: |
           REGISTRY="${{ secrets.ALIYUN_REGISTRY }}"
+          TAG="${{ steps.version.outputs.image_tag }}"
+
+          echo "Building & Pushing with Tag: $TAG"
 
           # 1. Gateway
           docker buildx build --push \
+            -t $REGISTRY/kingtiger-edu/gateway:$TAG \
             -t $REGISTRY/kingtiger-edu/gateway:latest \
             --build-arg JAR_FILE=target/gateway.jar \
             -f resources/backend/Dockerfile resources/backend
 
           # 2. System
           docker buildx build --push \
+            -t $REGISTRY/kingtiger-edu/system:$TAG \
             -t $REGISTRY/kingtiger-edu/system:latest \
             --build-arg JAR_FILE=target/system.jar \
             -f resources/backend/Dockerfile resources/backend
 
           # 3. User
           docker buildx build --push \
+            -t $REGISTRY/kingtiger-edu/user:$TAG \
             -t $REGISTRY/kingtiger-edu/user:latest \
             --build-arg JAR_FILE=target/user.jar \
             -f resources/backend/Dockerfile resources/backend
 
           # 4. Course
           docker buildx build --push \
+            -t $REGISTRY/kingtiger-edu/course:$TAG \
             -t $REGISTRY/kingtiger-edu/course:latest \
             --build-arg JAR_FILE=target/course.jar \
             -f resources/backend/Dockerfile resources/backend
 
-  # ================= 3. 服务器通过 SSH 快速拉取部署 =================
+  # ================= 3. 服务器通过 SSH 快速拉取精确版本并部署 =================
   deploy:
     name: Deploy to Server via SSH
     needs: [build-and-push-images]
@@ -176,7 +192,7 @@ jobs:
           source: "resources/backend/docker-compose.yml,resources/frontend/docker-compose.yml,resources/frontend/nginx.conf"
           target: "/data/app/"
 
-      - name: Remote Pull Images and Restart Docker Services
+      - name: Remote Pull Specified Version Images and Restart Docker Services
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -189,12 +205,14 @@ jobs:
             # 登录阿里云 ACR 镜像仓库
             docker login -u "${{ secrets.ALIYUN_USERNAME }}" -p "${{ secrets.ALIYUN_PASSWORD }}" "${{ secrets.ALIYUN_REGISTRY }}"
 
-            # 替换镜像地址为 ACR 地址并拉取重启
             export REGISTRY="${{ secrets.ALIYUN_REGISTRY }}"
+            export IMAGE_TAG="${{ needs.build-and-push-images.outputs.image_tag }}"
+
+            echo "Deploying version tag: $IMAGE_TAG"
 
             cd /data/app/resources/backend
-            docker compose pull
-            docker compose up -d --force-recreate
+            IMAGE_TAG=$IMAGE_TAG docker compose pull
+            IMAGE_TAG=$IMAGE_TAG docker compose up -d --force-recreate
 
             cd /data/app/resources/frontend
             docker compose up -d --force-recreate
