@@ -216,6 +216,9 @@ jobs:
 
             echo "Deploying version tag: $IMAGE_TAG"
 
+            # 自动清理服务器悬空无用镜像，释放磁盘空间
+            docker image prune -af --filter "until=24h" || true
+
             # 重载后端
             cd /data/app/resources/backend
             IMAGE_TAG=$IMAGE_TAG docker compose pull || (sleep 3 && IMAGE_TAG=$IMAGE_TAG docker compose pull)
