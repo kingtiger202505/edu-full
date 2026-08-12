@@ -94,7 +94,7 @@ jobs:
           path: dist_artifacts/frontend/dist/web/
           retention-days: 1
 
-  # ================= 2. 构建带时间戳/提交Hash版本的 Docker 镜像并推送至 ACR =================
+  # ================= 2. 构建 Docker 镜像并推送至 ACR =================
   build-and-push-images:
     name: Build and Push Docker Images with Version Tag
     needs: [build-backend, build-frontend-admin, build-frontend-web]
@@ -116,18 +116,6 @@ jobs:
         with:
           name: backend-target
           path: resources/backend/target/
-
-      - name: Download Admin Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-admin-dist
-          path: resources/frontend/dist/admin/
-
-      - name: Download Web Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-web-dist
-          path: resources/frontend/dist/web/
 
       - name: Log in to Aliyun ACR
         uses: docker/login-action@v3
@@ -174,13 +162,25 @@ jobs:
             --build-arg JAR_FILE=target/course.jar \
             -f resources/backend/Dockerfile resources/backend
 
-  # ================= 3. 服务器通过 SSH 快速拉取精确版本并部署 =================
+  # ================= 3. 服务器通过 SSH 快速拉取部署 =================
   deploy:
     name: Deploy to Server via SSH
-    needs: [build-and-push-images]
+    needs: [build-and-push-images, build-frontend-admin, build-frontend-web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download Admin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-admin-dist
+          path: resources/frontend/dist/admin/
+
+      - name: Download Web Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-web-dist
+          path: resources/frontend/dist/web/
 
       - name: Sync Compose, Nginx Configs and Frontend Dist to Server
         uses: appleboy/scp-action@v0.1.7
@@ -189,7 +189,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "resources/backend/docker-compose.yml,resources/frontend/docker-compose.yml,resources/frontend/nginx.conf,resources/frontend/dist"
+          source: "resources/backend/docker-compose.yml,resources/frontend/docker-compose.yml,resources/frontend/nginx.conf,resources/frontend/dist/"
           target: "/data/app/"
 
       - name: Remote Pull Specified Version Images and Restart Docker Services
