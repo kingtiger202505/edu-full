@@ -211,7 +211,7 @@ jobs:
             echo "Deploying version tag: $IMAGE_TAG"
 
             cd /data/app/resources/backend
-            IMAGE_TAG=$IMAGE_TAG docker compose pull
+            IMAGE_TAG=$IMAGE_TAG docker compose pull || (sleep 3 && IMAGE_TAG=$IMAGE_TAG docker compose pull)
             IMAGE_TAG=$IMAGE_TAG docker compose up -d --force-recreate
 
             cd /data/app/resources/frontend
