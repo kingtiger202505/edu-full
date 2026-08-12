@@ -94,7 +94,7 @@ jobs:
           path: dist_artifacts/frontend/dist/web/
           retention-days: 1
 
-  # ================= 2. 构建 Docker 镜像并推送至 ACR =================
+  # ================= 2. 构建前后端 Docker 镜像并推送至 ACR =================
   build-and-push-images:
     name: Build and Push Docker Images with Version Tag
     needs: [build-backend, build-frontend-admin, build-frontend-web]
@@ -117,6 +117,18 @@ jobs:
           name: backend-target
           path: resources/backend/target/
 
+      - name: Download Admin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-admin-dist
+          path: resources/frontend/dist/admin/
+
+      - name: Download Web Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-web-dist
+          path: resources/frontend/dist/web/
+
       - name: Log in to Aliyun ACR
         uses: docker/login-action@v3
         with:
@@ -127,12 +139,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and Push Microservice Images with Version Tag
+      - name: Build and Push Microservice & Frontend Images with Version Tag
         run: |
           REGISTRY="${{ secrets.ALIYUN_REGISTRY }}"
           TAG="${{ steps.version.outputs.image_tag }}"
 
-          echo "Building & Pushing with Tag: $TAG"
+          echo "Building & Pushing Images with Tag: $TAG"
 
           # 1. Gateway
           docker buildx build --push \
@@ -162,37 +174,31 @@ jobs:
             --build-arg JAR_FILE=target/course.jar \
             -f resources/backend/Dockerfile resources/backend
 
-  # ================= 3. 服务器通过 SSH 快速拉取部署 =================
+          # 5. Frontend Nginx (包含静态页面与配置)
+          docker buildx build --push \
+            -t $REGISTRY/kingtiger-edu/frontend:$TAG \
+            -t $REGISTRY/kingtiger-edu/frontend:latest \
+            -f resources/frontend/Dockerfile resources/frontend
+
+  # ================= 3. 服务器通过 SSH 纯指令一键 Pull 极速部署 =================
   deploy:
     name: Deploy to Server via SSH
-    needs: [build-and-push-images, build-frontend-admin, build-frontend-web]
+    needs: [build-and-push-images]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Admin Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-admin-dist
-          path: resources/frontend/dist/admin/
-
-      - name: Download Web Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-web-dist
-          path: resources/frontend/dist/web/
-
-      - name: Sync Compose, Nginx Configs and Frontend Dist to Server
+      - name: Sync Compose Configs to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "resources/backend/docker-compose.yml,resources/frontend/docker-compose.yml,resources/frontend/nginx.conf,resources/frontend/dist/"
+          source: "resources/backend/docker-compose.yml,resources/frontend/docker-compose.yml"
           target: "/data/app/"
 
-      - name: Remote Pull Specified Version Images and Restart Docker Services
+      - name: Remote Pull Images and Restart All Docker Services
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -210,9 +216,12 @@ jobs:
 
             echo "Deploying version tag: $IMAGE_TAG"
 
+            # 重载后端
             cd /data/app/resources/backend
             IMAGE_TAG=$IMAGE_TAG docker compose pull || (sleep 3 && IMAGE_TAG=$IMAGE_TAG docker compose pull)
             IMAGE_TAG=$IMAGE_TAG docker compose up -d --force-recreate
 
+            # 重载前端 (极速拉取纯镜像，完全无需传输文件)
             cd /data/app/resources/frontend
-            docker compose up -d --force-recreate
+            IMAGE_TAG=$IMAGE_TAG docker compose pull || (sleep 3 && IMAGE_TAG=$IMAGE_TAG docker compose pull)
+            IMAGE_TAG=$IMAGE_TAG docker compose up -d --force-recreate

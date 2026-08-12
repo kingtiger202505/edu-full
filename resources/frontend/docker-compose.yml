@@ -6,15 +6,11 @@ networks:
 
 services:
   frontend-nginx:
-    image: nginx:alpine
+    image: ${REGISTRY:-crpi-p83fit5o5eksva55.cn-beijing.personal.cr.aliyuncs.com}/kingtiger-edu/frontend:${IMAGE_TAG:-latest}
     container_name: edu-frontend
     restart: always
     ports:
       - "6080:80"
       - "6081:81"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./dist/admin:/usr/share/nginx/html/admin:ro
-      - ./dist/web:/usr/share/nginx/html/web:ro
     networks:
       - edu-net
