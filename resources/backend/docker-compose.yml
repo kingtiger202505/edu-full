@@ -12,6 +12,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-8.140.227.42:18848}
+      - SPRING_CLOUD_NACOS_DISCOVERY_IP=edu-gateway
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -26,6 +27,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-8.140.227.42:18848}
+      - SPRING_CLOUD_NACOS_DISCOVERY_IP=edu-service-system
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -40,6 +42,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-8.140.227.42:18848}
+      - SPRING_CLOUD_NACOS_DISCOVERY_IP=edu-service-user
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -54,6 +57,7 @@ services:
     restart: always
     environment:
       - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-8.140.227.42:18848}
+      - SPRING_CLOUD_NACOS_DISCOVERY_IP=edu-service-course
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
