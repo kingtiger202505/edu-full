@@ -14,6 +14,8 @@ services:
         JAR_FILE: target/gateway.jar
     container_name: edu-gateway
     restart: always
+    environment:
+      - NACOS_SERVER_ADDR=host.docker.internal:18848
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -29,6 +31,8 @@ services:
         JAR_FILE: target/system.jar
     container_name: edu-service-system
     restart: always
+    environment:
+      - NACOS_SERVER_ADDR=host.docker.internal:18848
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -44,6 +48,8 @@ services:
         JAR_FILE: target/user.jar
     container_name: edu-service-user
     restart: always
+    environment:
+      - NACOS_SERVER_ADDR=host.docker.internal:18848
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -59,6 +65,8 @@ services:
         JAR_FILE: target/course.jar
     container_name: edu-service-course
     restart: always
+    environment:
+      - NACOS_SERVER_ADDR=host.docker.internal:18848
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
