@@ -125,7 +125,9 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>3.3.7</version>
                     <configuration>
-                        <executable>true</executable>
+                        <layers>
+                            <enabled>true</enabled>
+                        </layers>
                     </configuration>
                     <executions>
                         <execution>
