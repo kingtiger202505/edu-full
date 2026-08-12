@@ -16,7 +16,7 @@ services:
     container_name: edu-gateway
     restart: always
     environment:
-      - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-host.docker.internal}:18848
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -35,7 +35,7 @@ services:
     container_name: edu-service-system
     restart: always
     environment:
-      - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-host.docker.internal}:18848
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -54,7 +54,7 @@ services:
     container_name: edu-service-user
     restart: always
     environment:
-      - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-host.docker.internal}:18848
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -73,7 +73,7 @@ services:
     container_name: edu-service-course
     restart: always
     environment:
-      - NACOS_SERVER_ADDR=host.docker.internal:18848
+      - NACOS_SERVER_ADDR=${MIDDLEWARE_HOST:-host.docker.internal}:18848
       - SEATA_ENABLED=false
     extra_hosts:
       - "host.docker.internal:host-gateway"
