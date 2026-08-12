@@ -12,6 +12,9 @@ RUN jlink \
 FROM alpine:3.19
 WORKDIR /application
 
+# 安装字体依赖（验证码生成需要）
+RUN apk add --no-cache fontconfig ttf-dejavu
+
 # 复制定制的极简 JRE
 ENV JAVA_HOME=/opt/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
