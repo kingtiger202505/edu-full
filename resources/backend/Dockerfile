@@ -1,7 +1,7 @@
 # 阶段 1：使用 JDK 生成极简 Custom JRE (仅约 45MB)
 FROM eclipse-temurin:17-jdk-alpine AS jre-builder
 RUN jlink \
-    --add-modules java.base,java.logging,java.xml,java.naming,java.sql,java.management,java.net.http,java.scripting,java.security.jgss,java.instrument,jdk.unsupported,jdk.management \
+    --add-modules java.base,java.logging,java.xml,java.naming,java.sql,java.management,java.net.http,java.scripting,java.security.jgss,java.instrument,jdk.unsupported,jdk.management,java.desktop \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
