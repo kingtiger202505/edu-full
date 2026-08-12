@@ -182,14 +182,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync Compose and Nginx Configs to Server
+      - name: Sync Compose, Nginx Configs and Frontend Dist to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "resources/backend/docker-compose.yml,resources/frontend/docker-compose.yml,resources/frontend/nginx.conf"
+          source: "resources/backend/docker-compose.yml,resources/frontend/docker-compose.yml,resources/frontend/nginx.conf,resources/frontend/dist"
           target: "/data/app/"
 
       - name: Remote Pull Specified Version Images and Restart Docker Services
