@@ -94,7 +94,7 @@ jobs:
           path: dist_artifacts/frontend/dist/web/
           retention-days: 1
 
-  # ================= 2. 干净纯产物打包与极速传输部署 =================
+  # ================= 2. 打包所有产物传输并部署 =================
   deploy:
     name: Deploy to Server
     needs: [build-backend, build-frontend-admin, build-frontend-web]
@@ -120,22 +120,21 @@ jobs:
           name: frontend-web-dist
           path: resources/frontend/dist/web/
 
-      - name: Clean Pack Resources Only (Strictly No Node Modules)
+      - name: Clean Pack Resources Only
         run: |
           tar -czf deploy.tar.gz --exclude='node_modules' --exclude='.git' resources/
           ls -lh deploy.tar.gz
 
-      - name: SCP Single Compressed Archive to Server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          timeout: 300s
-          command_timeout: 10m
-          source: "deploy.tar.gz"
-          target: "/data/app/"
+      - name: Setup SSH Private Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload Archive with Real-time Progress (rsync)
+        run: |
+          rsync -avz --info=progress2 -e "ssh -o StrictHostKeyChecking=no" deploy.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/data/app/
 
       - name: Extract Archive and Start Docker Services on Server
         uses: appleboy/ssh-action@v1.0.3
