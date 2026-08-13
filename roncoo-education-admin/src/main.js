@@ -23,10 +23,11 @@ async function setupInit() {
   } else {
     // 用户已登录
     const res = await loginApi.getUserInfo()
+    // 先加载权限和菜单，再挂载，避免 v-permission 指令在权限列表为空时误删元素
+    useUserStore().login(res)
     // 创建动态路由
     createNewRouter(res.routerList)
     init()
-    useUserStore().login(res)
   }
 }
 
