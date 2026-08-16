@@ -17,24 +17,31 @@ import { hasPermission } from '@/utils/permission.js'
 setupInit()
 
 async function setupInit() {
-  if (!getToken()) {
-    // 用户没登录
-    init()
-  } else {
-    // 用户已登录
-    const res = await loginApi.getUserInfo()
-    // 先加载权限和菜单，再挂载，避免 v-permission 指令在权限列表为空时误删元素
-    useUserStore().login(res)
-    // 创建动态路由
-    createNewRouter(res.routerList)
-    init()
+  const app = createApp(App)
+  app.use(store)
+
+  if (getToken()) {
+    try {
+      // 用户已登录
+      const res = await loginApi.getUserInfo()
+      if (res) {
+        // 先加载权限和菜单，再挂载，避免 v-permission 指令在权限列表为空时误删元素
+        useUserStore(store).login(res)
+        // 创建动态路由
+        if (res.routerList) {
+          createNewRouter(res.routerList)
+        }
+      }
+    } catch (e) {
+      console.error('获取用户信息失败:', e)
+    }
   }
+
+  init(app)
 }
 
-function init() {
-  const app = createApp(App)
+function init(app) {
   app.use(router)
-  app.use(store)
   app.use(ElementPlus)
 
   // 注册图标组件
