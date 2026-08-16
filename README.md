@@ -39,6 +39,7 @@ roncoo-education-full/
 
 各子项目的详细启动方式、依赖要求、模块划分请参考各自目录下的 `README.md`：
 
+- [ENVIRONMENT.md](ENVIRONMENT.md) — 环境准备与第三方服务（保利威/MinIO/阿里云）配置指南
 - [roncoo-education/README.md](roncoo-education/README.md) — 后端服务说明
 - [roncoo-education-admin/README.md](roncoo-education-admin/README.md) — 后台管理端说明
 - [roncoo-education-web/README.md](roncoo-education-web/README.md) — 用户前台说明

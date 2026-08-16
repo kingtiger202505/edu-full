@@ -1,13 +1,23 @@
 import PlvVideoUpload from '@polyv/vod-upload-js-sdk'
 
 export const getPolyvClient = (userData) => {
-  //初始化上传实例
-  const polyvClient = new PlvVideoUpload({
+  // 兼容打包环境下的构造函数获取 (解决 kO.default is not a constructor)
+  const PlvClass =
+    (typeof PlvVideoUpload === 'function' ? PlvVideoUpload : null) ||
+    (PlvVideoUpload && typeof PlvVideoUpload.default === 'function' ? PlvVideoUpload.default : null) ||
+    (typeof window !== 'undefined' ? window.PlvVideoUpload : null)
+
+  if (!PlvClass) {
+    throw new Error('未找到 PlvVideoUpload 构造函数，请检查保利威 SDK')
+  }
+
+  // 初始化上传实例
+  const polyvClient = new PlvClass({
     region: 'auto',
     events: {
       Error: (err) => {
         // 错误事件回调
-        console.error(err)
+        console.error('保利威上传错误:', err)
       },
       UploadComplete: () => {
         // 全部上传任务完成回调
