@@ -1,6 +1,7 @@
 package com.roncoo.education.course.callback.biz;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.core.util.StrUtil;
 import com.roncoo.education.common.core.enums.LiveStatusEnum;
 import com.roncoo.education.common.tools.BeanUtil;
 import com.roncoo.education.common.tools.JsonUtil;
@@ -55,13 +56,16 @@ public class PolyvCallbackBiz extends BaseBiz {
 
         VideoConfig videoConfig = feignSysConfig.getVideo();
         String sign = PolyvVodUtil.getCallbackSign(BeanUtil.beanToStringMap(callbackVodUpload), videoConfig.getPolyvSecretKey());
-        if (!callbackVodUpload.getSign().equals(sign)) {
-            log.error("保利威视--点播上传回调--验签失败 {}", JsonUtil.toJsonString(callbackVodUpload));
+        if (StrUtil.isBlank(callbackVodUpload.getSign()) || !callbackVodUpload.getSign().equalsIgnoreCase(sign)) {
+            log.error("保利威视--点播上传回调--验签失败 sign={}, expectSign={}, data={}", callbackVodUpload.getSign(), sign, JsonUtil.toJsonString(callbackVodUpload));
             return FAIL;
         }
 
-        if (CallbackEventTypeEnum.PASS.getCode().equals(callbackVodUpload.getType())) {
-            // 视频审核完成处理
+        String eventType = StrUtil.isNotBlank(callbackVodUpload.getType()) ? callbackVodUpload.getType() : callbackVodUpload.getEventType();
+        if (CallbackEventTypeEnum.PASS.getCode().equalsIgnoreCase(eventType)
+                || CallbackEventTypeEnum.TRANSCODE_COMPLETE.getCode().equalsIgnoreCase(eventType)
+                || CallbackEventTypeEnum.ENCODE.getCode().equalsIgnoreCase(eventType)) {
+            // 视频转码/审核完成处理
             vodCommonBiz.completeUpload(callbackVodUpload.getVid(), videoConfig);
         }
         return SUCCESS;
